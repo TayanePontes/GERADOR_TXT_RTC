@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador RTC 2.0 — PRIO</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f0f2f5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 16px;
+    color: #1a1a2e;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    padding: 40px 48px;
+    width: 100%;
+    max-width: 640px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: #003366;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+  }
+
+  .logo-text {
+    font-size: 13px;
+    color: #666;
+    font-weight: 400;
+  }
+  .logo-text strong {
+    display: block;
+    font-size: 15px;
+    color: #1a1a2e;
+    font-weight: 600;
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 32px;
+  }
+
+  .drop-zone {
+    border: 2px dashed #c8d4e8;
+    border-radius: 12px;
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: #f8fafd;
+    position: relative;
+  }
+
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: #003366;
+    background: #eef3fa;
+  }
+
+  .drop-zone input[type="file"] {
+    position: absolute; inset: 0;
+    opacity: 0; cursor: pointer;
+    width: 100%; height: 100%;
+  }
+
+  .drop-icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+  }
+
+  .drop-text {
+    font-size: 15px;
+    color: #444;
+    margin-bottom: 4px;
+  }
+
+  .drop-hint {
+    font-size: 12px;
+    color: #aaa;
+  }
+
+  .file-selected {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: #eef3fa;
+    border: 1px solid #c8d4e8;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-top: 16px;
+  }
+
+  .file-selected.visible { display: flex; }
+
+  .file-icon { font-size: 20px; }
+
+  .file-name {
+    font-size: 14px;
+    color: #003366;
+    font-weight: 500;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .btn-clear {
+    background: none; border: none;
+    color: #aaa; cursor: pointer;
+    font-size: 18px; line-height: 1;
+    padding: 0 4px;
+  }
+  .btn-clear:hover { color: #e55; }
+
+  .btn-generate {
+    display: block;
+    width: 100%;
+    margin-top: 24px;
+    padding: 14px;
+    background: #003366;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+  }
+
+  .btn-generate:hover { background: #004080; }
+  .btn-generate:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .status-box {
+    display: none;
+    margin-top: 24px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
+  }
+  .status-box.visible { display: block; }
+
+  .status-header {
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    background: #f4f6f9;
+    border-bottom: 1px solid #e0e0e0;
+    color: #555;
+  }
+
+  .status-list {
+    padding: 8px 0;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #333;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .status-item:last-child { border-bottom: none; }
+
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .badge-ok { background: #e6f4ea; color: #1a7a3a; }
+  .badge-err { background: #fdecea; color: #c0392b; }
+
+  .contracts-count {
+    margin-left: auto;
+    font-size: 12px;
+    color: #999;
+  }
+
+  .results-area {
+    display: none;
+    margin-top: 24px;
+  }
+  .results-area.visible { display: block; }
+
+  .results-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 12px;
+  }
+
+  .download-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .download-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #f8fafd;
+    border: 1px solid #c8d4e8;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #003366;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.15s;
+  }
+  .download-item:hover { background: #eef3fa; }
+
+  .dl-icon { font-size: 18px; flex-shrink: 0; }
+
+  .dl-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .dl-size { font-size: 11px; color: #aaa; flex-shrink: 0; }
+
+  .error-msg {
+    display: none;
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: #fdecea;
+    border: 1px solid #f5c6c4;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #c0392b;
+  }
+  .error-msg.visible { display: block; }
+
+  .footer {
+    margin-top: 32px;
+    font-size: 12px;
+    color: #bbb;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">
+    <div class="logo-mark">PRIO</div>
+    <div class="logo-text">
+      <strong>Gerador RTC 2.0</strong>
+      Ato Declaratório COPES
+    </div>
+  </div>
+
+  <h1>Geração de arquivos RTC</h1>
+  <p class="subtitle">Selecione a planilha de declaração mensal para gerar os arquivos .txt por empresa.</p>
+
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept=".xlsx,.xls" />
+    <div class="drop-icon">📊</div>
+    <div class="drop-text">Clique ou arraste a planilha aqui</div>
+    <div class="drop-hint">Arquivos .xlsx — aba "RTC 01.2026-Linha"</div>
+  </div>
+
+  <div class="file-selected" id="fileSelected">
+    <span class="file-icon">📄</span>
+    <span class="file-name" id="fileName"></span>
+    <button class="btn-clear" id="btnClear" title="Remover">✕</button>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <button class="btn-generate" id="btnGenerate" disabled>Gerar arquivos RTC</button>
+
+  <div class="status-box" id="statusBox">
+    <div class="status-header">Processamento</div>
+    <div class="status-list" id="statusList"></div>
+  </div>
+
+  <div class="results-area" id="resultsArea">
+    <div class="results-title">Arquivos prontos para download</div>
+    <div class="download-list" id="downloadList"></div>
+  </div>
+</div>
+
+<div class="footer">Uso interno PRIO — processamento 100% local, nenhum dado é enviado para servidores externos.</div>
+
+<script>
+const SHEET_NAME = "RTC 01.2026-Linha";
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileSelected = document.getElementById('fileSelected');
+const fileName = document.getElementById('fileName');
+const btnClear = document.getElementById('btnClear');
+const btnGenerate = document.getElementById('btnGenerate');
+const statusBox = document.getElementById('statusBox');
+const statusList = document.getElementById('statusList');
+const resultsArea = document.getElementById('resultsArea');
+const downloadList = document.getElementById('downloadList');
+const errorMsg = document.getElementById('errorMsg');
+
+let selectedFile = null;
+
+function setFile(file) {
+  if (!file) return;
+  selectedFile = file;
+  fileName.textContent = file.name;
+  fileSelected.classList.add('visible');
+  btnGenerate.disabled = false;
+  hideError();
+  resetResults();
+}
+
+function clearFile() {
+  selectedFile = null;
+  fileInput.value = '';
+  fileSelected.classList.remove('visible');
+  btnGenerate.disabled = true;
+  resetResults();
+}
+
+function resetResults() {
+  statusBox.classList.remove('visible');
+  statusList.innerHTML = '';
+  resultsArea.classList.remove('visible');
+  downloadList.innerHTML = '';
+}
+
+function showError(msg) {
+  errorMsg.textContent = msg;
+  errorMsg.classList.add('visible');
+}
+
+function hideError() {
+  errorMsg.classList.remove('visible');
+}
+
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) setFile(e.target.files[0]);
+});
+
+btnClear.addEventListener('click', clearFile);
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+});
+
+btnGenerate.addEventListener('click', processFile);
+
+function cleanCNPJ(s) {
+  return String(s || '').replace(/[.\-\/\s]/g, '');
+}
+
+function fmtDate(val) {
+  if (val == null || val === '' || val === 'NaN' || val === undefined) return '';
+  if (val instanceof Date && !isNaN(val)) {
+    const d = String(val.getDate()).padStart(2, '0');
+    const m = String(val.getMonth() + 1).padStart(2, '0');
+    const y = val.getFullYear();
+    return `${d}${m}${y}`;
+  }
+  const s = String(val).trim();
+  const m1 = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m1) return `${m1[3]}${m1[2]}${m1[1]}`;
+  const m2 = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (m2) return `${m2[1]}${m2[2]}${m2[3]}`;
+  if (/^\d{8}$/.test(s)) return s;
+  return s;
+}
+
+function cleanNIF(s) {
+  return String(s || '').replace(/\s+/g, '').trim();
+}
+
+function cleanPais(s) {
+  const m = String(s || '').trim().match(/^(\d+)/);
+  return m ? m[1] : String(s || '').trim();
+}
+
+function cleanNCM(s) {
+  const digits = String(s || '').replace(/[.\-]/g, '').trim();
+  if (digits.length === 8) return `${digits.slice(0,4)}.${digits.slice(4,6)}.${digits.slice(6)}`;
+  return String(s || '').trim();
+}
+
+function cleanQty(v) {
+  if (v == null || v === '' || isNaN(Number(String(v).replace(',', '.')))) return '';
+  const n = parseFloat(String(v).replace(',', '.'));
+  return n.toFixed(2).replace('.', ',');
+}
+
+function cleanLongText(s) {
+  if (!s) return '';
+  const idx = s.indexOf('PreencherTrading');
+  if (idx !== -1) s = s.slice(0, idx).trim();
+  if (s.endsWith('Preencherarril.')) s = s.slice(0, -'Preencherarril.'.length).trim();
+  return s;
+}
+
+function cellVal(row, idx) {
+  const v = row[idx];
+  if (v == null || v === undefined) return '';
+  return String(v).trim();
+}
+
+function isValidEmpresa(v) {
+  const s = String(v || '').trim();
+  return s !== '' && s !== '0' && s !== 'nan' && /^\d{4}$/.test(s);
+}
+
+function processFile() {
+  hideError();
+  resetResults();
+  btnGenerate.disabled = true;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array', cellDates: true });
+
+      const sheetNames = wb.SheetNames;
+      const rtcSheet = sheetNames.find(n => n.startsWith('RTC 01.') || n.startsWith('RTC 0'));
+      const sheet = wb.Sheets[rtcSheet || SHEET_NAME];
+
+      if (!sheet) {
+        showError(`Aba "${SHEET_NAME}" não encontrada. Abas disponíveis: ${sheetNames.join(', ')}`);
+        btnGenerate.disabled = false;
+        return;
+      }
+
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false, dateNF: 'yyyy-mm-dd' });
+
+      const dataRows = rows.slice(4).filter(r => isValidEmpresa(r[0]));
+
+      if (dataRows.length === 0) {
+        showError('Nenhum contrato encontrado na planilha. Verifique se a aba correta está sendo usada.');
+        btnGenerate.disabled = false;
+        return;
+      }
+
+      const grupos = new Map();
+      const grupoRepr = new Map();
+
+      for (const row of dataRows) {
+        const cnpjFull = cleanCNPJ(cellVal(row, 18));
+        const raiz = cnpjFull.slice(0, 8);
+        if (!grupos.has(raiz)) {
+          grupos.set(raiz, []);
+          grupoRepr.set(raiz, cnpjFull);
+        }
+        grupos.get(raiz).push(row);
+      }
+
+      statusBox.classList.add('visible');
+      statusList.innerHTML = '';
+      const generated = [];
+
+      const RAIZ_CODE = {
+        '08926302': '1200',
+        '03255266': '0700',
+        '06871406': '2000',
+      };
+
+      for (const [raiz, rowsGroup] of grupos) {
+        const cnpjRepr = grupoRepr.get(raiz);
+        const codigoEmpresa = RAIZ_CODE[raiz] || raiz;
+
+        let mesRef = '';
+        try {
+          const dr = cellVal(rowsGroup[0], 23);
+          if (dr) {
+            const m = dr.match(/^(\d{4})-(\d{2})/);
+            if (m) mesRef = `${m[1]}${m[2]}`;
+          }
+        } catch(e) {}
+        if (!mesRef) {
+          const now = new Date();
+          mesRef = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}`;
+        }
+
+        const lines = [];
+        lines.push(`1000|${cnpjRepr}`);
+
+        for (const row of rowsGroup) {
+          const tipoContrato = cellVal(row, 19);
+          const numContrato  = cellVal(row, 20);
+          const reciboOrig   = cellVal(row, 21);
+          const natureza     = cellVal(row, 22);
+          const dataAssin    = fmtDate(cellVal(row, 23));
+          const dataVig      = fmtDate(cellVal(row, 24));
+          const prazoDet     = cellVal(row, 25);
+          const dataTerm     = fmtDate(cellVal(row, 26));
+
+          lines.push(`2000|${tipoContrato}|${numContrato}|${reciboOrig}|${natureza}|${dataAssin}|${dataVig}|${prazoDet}|${dataTerm}`);
+
+          const nomeContrap = cellVal(row, 27);
+          const nif         = cleanNIF(cellVal(row, 28));
+          const email       = cellVal(row, 30);
+          const codPais     = cleanPais(cellVal(row, 29));
+
+          lines.push(`3000|${nomeContrap}|${nif}|${email}|${codPais}`);
+
+          const ncm        = cleanNCM(cellVal(row, 31));
+          const descricao  = cellVal(row, 32).replace(/\t/g, ' ').trim();
+          const qtd        = cleanQty(cellVal(row, 33));
+          const unidade    = cellVal(row, 34);
+          const dataRefTp  = cellVal(row, 35);
+          const dataFixa   = fmtDate(cellVal(row, 36));
+          const periodoPrec = cellVal(row, 37);
+          const precoUnid  = cellVal(row, 38);
+          const criterio   = cleanLongText(cellVal(row, 39));
+          const moeda      = cellVal(row, 40);
+          const incoterm   = cellVal(row, 41);
+          const fonte      = cellVal(row, 42);
+          const ajuste     = cleanLongText(cellVal(row, 43));
+          const recorrente = cellVal(row, 44);
+
+          lines.push(`4000|${ncm}|${descricao}|${qtd}|${unidade}|${dataRefTp}|${dataFixa}|${periodoPrec}|${precoUnid}|${criterio}|${moeda}|${incoterm}|${ajuste}|${recorrente}|||${fonte}`);
+        }
+
+        const filename = `RTC_${codigoEmpresa}_${mesRef}.txt`;
+
+        const content = lines.join('\n') + '\n';
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+
+        generated.push({ filename, url, contracts: rowsGroup.length, size: content.length });
+
+        const item = document.createElement('div');
+        item.className = 'status-item';
+        item.innerHTML = `
+          <span class="badge badge-ok">OK</span>
+          <span style="flex:1">${filename}</span>
+          <span class="contracts-count">${rowsGroup.length} contrato(s)</span>
+        `;
+        statusList.appendChild(item);
+      }
+
+      resultsArea.classList.add('visible');
+      downloadList.innerHTML = '';
+
+      for (const f of generated) {
+        const sizeKb = (f.size / 1024).toFixed(1);
+        const a = document.createElement('a');
+        a.href = f.url;
+        a.download = f.filename;
+        a.className = 'download-item';
+        a.innerHTML = `
+          <span class="dl-icon">⬇️</span>
+          <span class="dl-name">${f.filename}</span>
+          <span class="dl-size">${sizeKb} KB</span>
+        `;
+        downloadList.appendChild(a);
+      }
+
+    } catch(err) {
+      showError('Erro ao processar a planilha: ' + err.message);
+      console.error(err);
+    }
+
+    btnGenerate.disabled = false;
+  };
+
+  reader.readAsArrayBuffer(selectedFile);
+}
+</script>
+</body>
+</html>
