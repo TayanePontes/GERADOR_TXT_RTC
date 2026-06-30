@@ -396,10 +396,24 @@ function fmtDate(val) {
     return `${d}${m}${y}`;
   }
   const s = String(val).trim();
+
+  // AAAA-MM-DD (ISO)
   const m1 = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (m1) return `${m1[3]}${m1[2]}${m1[1]}`;
-  const m2 = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+
+  // DD/MM/AAAA (4 dígitos no ano, com zero à esquerda)
+  const m2 = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (m2) return `${m2[1]}${m2[2]}${m2[3]}`;
+
+  // M/D/AA ou M/D/AAAA ou MM/DD/AA — formato americano que o SheetJS devolve com dateNF
+  // (mês primeiro, sem zero à esquerda, ano com 2 ou 4 dígitos)
+  const m3 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (m3) {
+    let [, mo, da, yr] = m3;
+    if (yr.length === 2) yr = (parseInt(yr, 10) < 70 ? '20' : '19') + yr;
+    return `${da.padStart(2,'0')}${mo.padStart(2,'0')}${yr}`;
+  }
+
   if (/^\d{8}$/.test(s)) return s;
   return s;
 }
@@ -500,14 +514,12 @@ function processFile() {
       }
 
       const grupos = new Map();
-      const grupoRepr = new Map();
 
       for (const row of dataRows) {
         const cnpjFull = cleanCNPJ(cellVal(row, 18));
         const raiz = cnpjFull.slice(0, 8);
         if (!grupos.has(raiz)) {
           grupos.set(raiz, []);
-          grupoRepr.set(raiz, cnpjFull);
         }
         grupos.get(raiz).push(row);
       }
@@ -522,8 +534,13 @@ function processFile() {
         '06871406': '2000',
       };
 
+      const RAIZ_CNPJ_COMPLETO = {
+        '08926302': '08926302000105',
+        '06871406': '06871406000126',
+      };
+
       for (const [raiz, rowsGroup] of grupos) {
-        const cnpjRepr = grupoRepr.get(raiz);
+        const cnpjRepr = RAIZ_CNPJ_COMPLETO[raiz] || raiz;
         const codigoEmpresa = RAIZ_CODE[raiz] || raiz;
 
         let mesRef = '';
