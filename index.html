@@ -460,7 +460,7 @@ function cleanLongText(s) {
 function cellVal(row, idx) {
   const v = row[idx];
   if (v == null || v === undefined) return '';
-  return String(v).replace(/\r/g, '').trim();
+  return String(v).replace(/[\r\n]+/g, ' ').trim();
 }
 
 function isValidEmpresa(v) {
@@ -584,7 +584,7 @@ function processFile() {
 
         const filename = `RTC_${codigoEmpresa}_${mesRef}.txt`;
 
-        const content = (lines.join('\n') + '\n').replace(/\n/g, '\r\n');
+        const content = lines.join('\r\n') + '\r\n';
         const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
 
