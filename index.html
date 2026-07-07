@@ -474,7 +474,7 @@ function cleanLongText(s) {
 function cellVal(row, idx) {
   const v = row[idx];
   if (v == null || v === undefined) return '';
-  return String(v).trim();
+  return String(v).replace(/[\r\n]+/g, ' ').trim();
 }
 
 function isValidEmpresa(v) {
