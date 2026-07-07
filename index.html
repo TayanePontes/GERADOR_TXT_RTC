@@ -474,7 +474,7 @@ function cleanLongText(s) {
 function cellVal(row, idx) {
   const v = row[idx];
   if (v == null || v === undefined) return '';
-  return String(v).replace(/[\r\n]+/g, ' ').trim();
+  return String(v).replace(/\r/g, '').trim();
 }
 
 function isValidEmpresa(v) {
@@ -586,11 +586,11 @@ function processFile() {
           const dataFixa   = fmtDate(cellVal(row, 36));
           const periodoPrec = cellVal(row, 37);
           const precoUnid  = cellVal(row, 38);
-          const criterio   = cleanLongText(cellVal(row, 39)).replace(/[\r\n]+/g, ' ');
+          const criterio   = cleanLongText(cellVal(row, 39));
           const moeda      = cellVal(row, 40);
           const incoterm   = cellVal(row, 41);
           const fonte      = cellVal(row, 42);
-          const ajuste     = cleanLongText(cellVal(row, 43)).replace(/[\r\n]+/g, ' ');
+          const ajuste     = cleanLongText(cellVal(row, 43));
           const recorrente = cellVal(row, 44);
 
           lines.push(`4000|${ncm}|${descricao}|${qtd}|${unidade}|${dataRefTp}|${dataFixa}|${periodoPrec}|${precoUnid}|${criterio}|${moeda}|${incoterm}|${ajuste}|${recorrente}|||${fonte}`);
@@ -598,7 +598,7 @@ function processFile() {
 
         const filename = `RTC_${codigoEmpresa}_${mesRef}.txt`;
 
-        const content = lines.join('\r\n') + '\r\n';
+        const content = (lines.join('\n') + '\n').replace(/\n/g, '\r\n');
         const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
 
